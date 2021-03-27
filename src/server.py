@@ -14,18 +14,17 @@
 import os
 import sys
 from urllib.error import HTTPError
-from flask import Flask, request, send_from_directory, redirect, url_for, render_template
-from werkzeug.utils import secure_filename
+from flask import Flask, request, redirect, url_for, jsonify
 import requests
+import json
 import datetime, time
 
 #______________________#
 # App Import
 #______________________#
-print(sys.path)
-from db import Patient, Roles, User
-from database import db_session
-from db import db
+from db.database import db_session
+from model.paitent import Patient
+from model.user import User, Roles
 #______________________#
 # App Setup and Load 
 # Static File Path
@@ -50,58 +49,263 @@ def send_favicons(path):
 
 def current_dt():
     return datetime.datetime.now().strftime("%m-%d-%Y_%H:%M:%S")
+
+def validate_args_fields(fields, args):
+
+    status = True
+
+    for keys in args.keys():
+        if keys not in fields:
+            passed = False
+
+    return status
+
 #______________________#
 # Core Routes
 #______________________#
-@app.route("/paitent", methods=['GET'])
-def create_paitent():
-    current_dt = current_dt()
+@app.route("/paitent", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def paitent():
+
+    request_url = request.url
+    request_arg = dict(request.args)
+    paitent_fields = ['first_name', 'middle_name', 'last_name', 'dob', 'gender']
+
+    if (False == validate_args_fields(paitent_fields, request_arg)):
+        response = app.response_class(
+                    response="Bad request check field!",
+                    status=400,
+                    mimetype='application/text'
+                )
+        return response
+
     if request.method == 'POST':
         try:
-            data = request.get_json()
-            
-            return "SUCCESS!"
-        except Exception as e:
-            print (e)
-            raise HTTPError('/uploadFiles', '500', 'Something went wrong on server!')
+            if (len(request_arg.keys()) == 0):
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                update_item = request_arg.copy()
+                new_paitent = Patient(**update_item)
+                db_session.add(new_paitent)
+                db_session.commit()
+                response = app.response_class(
+                    response="SUCCESS!",
+                    status=200,
+                    mimetype='application/text'
+                )
+            return response
+        except HTTPError as e:
+            raise e
 
-@app.route("/create_paitent", methods=['POST'])
-def create_paitent():
-    current_dt = current_dt()
+    if request.method == 'GET':
+        result = ""
+        try:
+            if (len(request_arg.keys()) == 0):
+                result = Patient.query.all()
+                result = [r.to_dict() for r in result]
+            else:
+                result = db_session.query(Patient).filter_by(**request_arg).all()
+                result = [r.to_dict() for r in result]
+            response = app.response_class(
+                        response=json.dumps(result),
+                        status=200,
+                        mimetype='application/json'
+                    )
+            return response
+        except HTTPError as e:
+            raise e
+
+    if request.method == 'PUT':
+        try:
+            if (len(request_arg.keys()) == 0):
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                update_item = request_arg.copy()
+                del update_item['id']
+                result = Patient.query.filter_by(id=request_arg.get('id')).update(update_item)
+                db_session.commit()
+                response = app.response_class(
+                        response="SUCESS!",
+                        status=200,
+                        mimetype='application/text'
+                    )
+                return response
+        except HTTPError as e:
+            raise e
+
+    if request.method == 'DELETE':
+        try:
+            print(request.json)
+            if not request.json or not 'id' in request.json:
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                result = Patient.query.filer_by(id=request.json.get('id')).delete()
+                db_session.commit()
+                return ("SUCESS!")
+        except HTTPError as e:
+            raise e
+
+@app.route("/roles", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def roles():
+
+    request_url = request.url
+    request_arg = dict(request.args)
+    paitent_fields = ['roles']
+
+    if (False == validate_args_fields(paitent_fields, request_arg)):
+        response = app.response_class(
+                    response="Bad request check field!",
+                    status=400,
+                    mimetype='application/text'
+                )
+        return response
+
     if request.method == 'POST':
+        try:
+            if (len(request_arg.keys()) == 0):
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs="", fp="")
+            else:
+                update_item = request_arg.copy()
+                new_roles = Roles(**update_item)
+                db_session.add(new_roles)
+                db_session.commit()
+                response = app.response_class(
+                    response="SUCCESS!",
+                    status=200,
+                    mimetype='application/text'
+                )
+            return response
+        except HTTPError as e:
+            raise e
 
-        data = request.get_json()
+    if request.method == 'GET':
+        result = ""
+        try:
+            if (len(request_arg.keys()) == 0):
+                result = Roles.query.all()
+                result = [r.to_dict() for r in result]
+            else:
+                result = db_session.query(Roles).filter_by(**request_arg).all()
+                result = [r.to_dict() for r in result]
+            response = app.response_class(
+                        response=json.dumps(result),
+                        status=200,
+                        mimetype='application/json'
+                    )
+            return response
+        except HTTPError as e:
+            raise e
 
-        new = Patient('TEST','TEST')
-        db_session.add(new)
-        db_session.commit()
+    if request.method == 'PUT':
+        try:
+            if (len(request_arg.keys()) == 0):
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                update_item = request_arg.copy()
+                del update_item['id']
+                result = Roles.query.filter_by(id=request_arg.get('id')).update(update_item)
+                db_session.commit()
+                response = app.response_class(
+                        response="SUCESS!",
+                        status=200,
+                        mimetype='application/text'
+                    )
+                return response
+        except HTTPError as e:
+            raise e
 
-        if clientFile and appFile and allowed_file(clientFile.filename) and allowed_file(appFile.filename):
-            try:
-                uploadSuccess = "True"
-            except Exception as e:
-                print (e)
-                raise HTTPError('/uploadFiles', '500', 'Something went wrong on server!')
+    if request.method == 'DELETE':
+        try:
+            print(request.json)
+            if not request.json or not 'id' in request.json:
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                result = Roles.query.filer_by(id=request.json.get('id')).delete()
+                db_session.commit()
+                return ("SUCESS!")
+        except HTTPError as e:
+            raise e
 
-@app.route("/create", methods=['POST'])
-def create_paitent():
-    current_dt = current_dt()
+
+@app.route("/users", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def users():
+
+    request_url = request.url
+    request_arg = dict(request.args)
+    paitent_fields = ['user_name', 'passwd', 'role_id']
+
+    if (False == validate_args_fields(paitent_fields, request_arg)):
+        response = app.response_class(
+                    response="Bad request check field!",
+                    status=400,
+                    mimetype='application/text'
+                )
+        return response
+
     if request.method == 'POST':
+        try:
+            if (len(request_arg.keys()) == 0):
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs="", fp="")
+            else:
+                update_item = request_arg.copy()
+                new_user = User(**update_item)
+                db_session.add(new_user)
+                db_session.commit()
+                response = app.response_class(
+                    response="SUCCESS!",
+                    status=200,
+                    mimetype='application/text'
+                )
+            return response
+        except HTTPError as e:
+            raise e
 
-        clientFile = request.files['clientFile']
-        appFile = request.files['appFile']
+    if request.method == 'GET':
+        result = ""
+        try:
+            if (len(request_arg.keys()) == 0):
+                result = User.query.all()
+                result = [r.to_dict() for r in result]
+            else:
+                result = db_session.query(User).filter_by(**request_arg).all()
+                result = [r.to_dict() for r in result]
+            response = app.response_class(
+                        response=json.dumps(result),
+                        status=200,
+                        mimetype='application/json'
+                    )
+            return response
+        except HTTPError as e:
+            raise e
 
-        if clientFile.filename == '' or appFile.filename == '':
-            raise HTTPError('/uploadFiles','415', 'File seems to have no name!')
+    if request.method == 'PUT':
+        try:
+            if (len(request_arg.keys()) == 0):
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                update_item = request_arg.copy()
+                del update_item['id']
+                result = User.query.filter_by(id=request_arg.get('id')).update(update_item)
+                db_session.commit()
+                response = app.response_class(
+                        response="SUCESS!",
+                        status=200,
+                        mimetype='application/text'
+                    )
+                return response
+        except HTTPError as e:
+            raise e
 
-        if clientFile and appFile and allowed_file(clientFile.filename) and allowed_file(appFile.filename):
-            try:
-
-                uploadSuccess = "True"
-            except Exception as e:
-                print (e)
-                raise HTTPError('/uploadFiles', '500', 'Something went wrong on server!')
-    return uploadSuccess
+    if request.method == 'DELETE':
+        try:
+            print(request.json)
+            if not request.json or not 'id' in request.json:
+                raise HTTPError(url=request.url, code=400, msg="Bad Request!!", hdrs=request.headers, fp="")
+            else:
+                result = User.query.filer_by(id=request.json.get('id')).delete()
+                db_session.commit()
+                return ("SUCESS!")
+        except HTTPError as e:
+            raise e
 
 @app.route("/login", methods=['POST'])
 def login(client, username, password):
@@ -111,7 +315,8 @@ def login(client, username, password):
             username=username,
             password=password
         ), follow_redirects=True)
-    except HTTPError(code=403, msg"Not welcomed here!")
+    except:
+        raise HTTPError(code=403, msg="Not welcomed here!")
 
 @app.route("/login", methods=['POST'])
 def logout(client):
@@ -121,15 +326,9 @@ def logout(client):
 def shutdown_session(exception=None):
     db_session.remove()
 
-def commit(action):
-
-    if (action == 'add'):
-        db.session.add(u)
-    elif (action == 'query'):
-        db.session.(u)
-    elif (action == 'delete'):
-        db.session.commit()
-
 if __name__ == "__main__":
     app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.run(host='127.0.1.1', port='1990', use_reloader=False, use_debugger=True)
+    app.run(host='127.0.1.1', port='1990', use_reloader=True, use_debugger=True)
+
+    import db.database
+    database.init_db()
