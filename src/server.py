@@ -13,11 +13,12 @@
 #______________________#
 import os
 import sys
-from urllib.error import HTTPError
-from flask import Flask, request, redirect, url_for, jsonify
 import requests
 import json
 import datetime, time
+from urllib.error import HTTPError
+from flask import Flask, request, redirect, url_for, jsonify
+from flask_cors import cross_origin
 
 #______________________#
 # App Import
@@ -64,6 +65,7 @@ def validate_args_fields(fields, args):
 # Core Routes
 #______________________#
 @app.route("/paitent", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@cross_origin()
 def paitent():
 
     request_url = request.url
@@ -145,6 +147,7 @@ def paitent():
             raise e
 
 @app.route("/roles", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@cross_origin()
 def roles():
 
     request_url = request.url
@@ -227,6 +230,7 @@ def roles():
 
 
 @app.route("/users", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@cross_origin()
 def users():
 
     request_url = request.url
@@ -308,6 +312,7 @@ def users():
             raise e
 
 @app.route("/login", methods=['POST'])
+@cross_origin()
 def login(client, username, password):
 
     try:
@@ -319,6 +324,7 @@ def login(client, username, password):
         raise HTTPError(code=403, msg="Not welcomed here!")
 
 @app.route("/login", methods=['POST'])
+@cross_origin()
 def logout(client):
     return client.get('/logout', follow_redirects=True)
 
@@ -329,6 +335,8 @@ def shutdown_session(exception=None):
 if __name__ == "__main__":
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.run(host='127.0.1.1', port='1990', use_reloader=True, use_debugger=True)
+    cors = CORS(app)
+    app.config['CORS_HEADERS'] = 'Content-Type'
 
     import db.database
     database.init_db()
