@@ -9,9 +9,9 @@ test_apis = [ "http://127.0.1.1:1990/users?username=patelbb","http://127.0.1.1:1
 
 request_api = {
     "GET" : [test_apis[0], test_apis[1], test_apis[9], test_apis[3],test_apis[4], test_apis[4],test_apis[5], test_apis[6], test_apis[8], test_apis[9]],
-    #"POST" : [test_apis[11]],
-    #"PUT" : [test_apis[10], test_apis[0], test_apis[0], test_apis[0],test_apis[0], test_apis[0],test_apis[0], test_apis[0]],
-    #"DELETE" : [test_apis[5]]
+    "POST" : [test_apis[11]],
+    "PUT" : [test_apis[10], test_apis[0], test_apis[0], test_apis[0],test_apis[0], test_apis[0],test_apis[0], test_apis[0]],
+    "DELETE" : [test_apis[5]]
 }
 
 s = Session()

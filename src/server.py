@@ -18,11 +18,12 @@ import json
 import datetime, time
 from urllib.error import HTTPError
 from flask import Flask, request, redirect, url_for, jsonify
-from flask_cors import cross_origin
+from flask_cors import CORS, cross_origin
 
 #______________________#
 # App Import
 #______________________#
+import db
 from db.database import db_session
 from model.paitent import Patient
 from model.user import User, Roles
@@ -332,11 +333,16 @@ def logout(client):
 def shutdown_session(exception=None):
     db_session.remove()
 
+
+def init_db():
+    # import all modules here that might define models so that
+    # they will be registered properly on the metadata.  Otherwise
+    # you will have to import them first before calling init_db()
+    Base.metadata.create_all(bind=engine)
+
 if __name__ == "__main__":
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.run(host='127.0.1.1', port='1990', use_reloader=True, use_debugger=True)
     cors = CORS(app)
     app.config['CORS_HEADERS'] = 'Content-Type'
-
-    import db.database
-    database.init_db()
+    init_db()
